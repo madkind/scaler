@@ -2,4 +2,6 @@ I am striving to demonstrate my skills in a quick manner. I am leaving comments 
 
 Worklog:
 
-2024.11.14 | 17:46 - Start backend project. I would challenge you asking for an unreleased version of django, but I suppose you challenge me!
+2024.11.14 
+- [2h] Start backend project. I would challenge you asking for an unreleased version of django, but I suppose you challenge me!
+- [20:49] Define models

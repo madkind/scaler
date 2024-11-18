@@ -1,8 +1,9 @@
 services:
   db:
-    image: postgres:13
+    image: postgres:16
     volumes:
       - ./data:/var/lib/postgresql/data
+    restart: always
     environment:
       POSTGRES_DB: django_db
       POSTGRES_USER: django_user
@@ -17,6 +18,7 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    restart: always
     environment:
       DEBUG: '1'
       DATABASE_NAME: django_db
