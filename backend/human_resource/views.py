@@ -1,3 +1,28 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Employee
+from .serializers import EmployeeSerializer
+import django_filters
+from django_filters.rest_framework import DjangoFilterBackend
 
-# Create your views here.
+
+class EmployeeFilter(django_filters.FilterSet):
+    name = django_filters.CharFilter(
+        field_name="name", lookup_expr="icontains", label="Name"
+    )
+    email = django_filters.CharFilter(
+        field_name="email", lookup_expr="icontains", label="Email"
+    )
+
+    class Meta:
+        model = Employee
+        fields = ["name", "email"]
+
+
+class EmployeeViewSet(viewsets.ModelViewSet):
+    queryset = Employee.objects.select_related(
+        "employeedepartmentassignment__department"
+    ).all()
+    serializer_class = EmployeeSerializer
+    permission_classes = []
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = EmployeeFilter

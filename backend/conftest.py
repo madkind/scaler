@@ -1,5 +1,6 @@
 from appointment.models import Appointment, AppointmentInvitee
 import pytest
+from rest_framework.test import APIClient
 from human_resource.models import (
     Employee,
     EmployeeDepartmentAssignment,
@@ -97,3 +98,8 @@ def appointment(employee_1, employee_2):
         ]
     )
     return _appointment
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
