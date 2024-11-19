@@ -3,8 +3,8 @@ from human_resource.models import Employee
 
 
 class Appointment(models.Model):
-    start_datetime = models.DateTimeField()
-    end_datetime = models.DateTimeField()
+    start_datetime = models.DateTimeField(db_index=True)
+    end_datetime = models.DateTimeField(db_index=True)
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     creator = models.OneToOneField(Employee, on_delete=models.CASCADE)
