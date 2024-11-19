@@ -19,11 +19,6 @@ class Department(models.Model):
     )
     description = models.TextField(blank=True, null=True)
 
-    def save(self, *args, **kwargs):
-        if self.manager and self.manager.position != Position.MANAGER.value:
-            raise ValidationError(f"The manager must have the position '{Position.MANAGER.value}'.")
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.name
 
@@ -40,7 +35,7 @@ class Employee(models.Model):
 
     @property
     def department(self):
-        assignment = getattr(self, 'department_assignment', None)
+        assignment = getattr(self, 'employeedepartmentassignment', None)
         return assignment.department if assignment else None
     
     def __str__(self):
@@ -50,8 +45,3 @@ class Employee(models.Model):
 class EmployeeDepartmentAssignment(models.Model):
     employee = models.OneToOneField('Employee', unique=True, on_delete=models.CASCADE)
     department = models.ForeignKey('Department', on_delete=models.CASCADE)
-
-    def save(self, *args, **kwargs):
-        if self.employee.position != Position.EMPLOYEE.value:
-            raise ValidationError(f"Only employees with the position '{Position.EMPLOYEE.value}' can be assigned.")
-        super().save(*args, **kwargs)

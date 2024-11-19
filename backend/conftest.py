@@ -7,6 +7,12 @@ from human_resource.models import (
     Position,
 )
 
+def create_employee_to_department_assignment(employee, department):
+    return EmployeeDepartmentAssignment.objects.create(
+        employee=employee,
+        department=department,
+    )
+
 
 @pytest.fixture(autouse=True)
 def enable_db_access(db):
@@ -14,48 +20,57 @@ def enable_db_access(db):
 
 
 @pytest.fixture
-def employee_1():
-    return Employee.objects.create(
+def employee_1(department_with_manager):
+    emp = Employee.objects.create(
         name="employee 1",
         email="first@employee.com",
         position=Position.EMPLOYEE.value,
     )
+    create_employee_to_department_assignment(emp, department_with_manager)
+    return emp 
 
 
 @pytest.fixture
-def employee_2():
-    return Employee.objects.create(
+def employee_2(department_with_manager):
+    emp = Employee.objects.create(
         name="employee 2",
         email="second@employee.com",
         position=Position.EMPLOYEE.value,
     )
+    create_employee_to_department_assignment(emp, department_with_manager)
+    return emp 
 
 
 @pytest.fixture
 def manager_1():
-    return Employee.objects.create(
+    emp = Employee.objects.create(
         name="manager 1",
-        email="first@employee.com",
+        email="first@manager.com",
         position=Position.MANAGER.value,
     )
+    return emp 
 
 
 @pytest.fixture
 def manager_2():
-    return Employee.objects.create(
+    emp = Employee.objects.create(
         name="manager 2",
-        email="second@employee.com",
+        email="second@manager.com",
         position=Position.MANAGER.value,
     )
+    return emp 
 
 
 @pytest.fixture
 def department_with_manager(manager_1):
-    return Department.objects.create(
+    department = Department.objects.create(
         name="department_with_manager",
-        manager=manager_1,
         description="department_with_manager",
     )
+    department.manager = manager_1
+    department.save()
+    create_employee_to_department_assignment(manager_1, department)
+    return department
 
 
 @pytest.fixture
