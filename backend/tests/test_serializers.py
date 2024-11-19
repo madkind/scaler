@@ -1,4 +1,4 @@
-from human_resource.serializers import DepartmentSerializer
+from human_resource.serializers import DepartmentSerializer, EmployeeSerializer
 from human_resource.models import Employee
 from rest_framework import serializers
 from conftest import create_employee_to_department_assignment
@@ -57,7 +57,7 @@ class TestDepartmentSerializer:
     def test_update_department_when_new_manager_is_appointed_old_manager_is_demoted(self, department_with_manager, manager_1, employee_1):
         assert manager_1.department == department_with_manager
         assert manager_1.position == Employee.Position.MANAGER.value
-        # create_employee_to_department_assignment(employee_1, department_with_manager)
+
         data = {
             "id": department_with_manager.id,
             "manager": employee_1.id,
@@ -70,3 +70,15 @@ class TestDepartmentSerializer:
         employee_1.refresh_from_db()
         assert manager_1.position == Employee.Position.EMPLOYEE.value
         assert employee_1.position == Employee.Position.MANAGER.value
+
+class TestEmployeeSerializer:
+
+    def test_serialize_department(self, employee_1):
+        serializer = EmployeeSerializer(employee_1)
+        assert serializer.data["id"] == employee_1.id
+        assert serializer.data["name"] == employee_1.name
+        assert serializer.data["email"] == employee_1.email
+        assert serializer.data["position"] == employee_1.position
+        assert serializer.data["department"] == employee_1.department
+        
+    # skipping rest of tests since no custom logic is implemented

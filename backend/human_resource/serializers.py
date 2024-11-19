@@ -5,8 +5,15 @@ from django.db.models import Case, When, Value
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    pass
-    # this sets department on employee, then automatically set position on employee. Also sets
+    class Meta:
+        model = Employee
+        fields = (
+            "id",
+            "name",
+            "email",
+            "position",
+            "department",
+        )
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -20,7 +27,12 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Department
-        fields = ["id", "name", "manager", "description"]
+        fields = (
+            "id",
+            "name",
+            "manager",
+            "description",
+        )
 
     def validate(self, data):
         department_id = self.instance.id if self.instance else None
@@ -50,9 +62,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
             employeedepartmentassignment__department=department_instance.id
         ).update(
             position=Case(
-                When(
-                    id=manager_id, then=Value(Employee.Position.MANAGER.value)
-                ),
-                default=Value(Employee.Position.EMPLOYEE.value)
+                When(id=manager_id, then=Value(Employee.Position.MANAGER.value)),
+                default=Value(Employee.Position.EMPLOYEE.value),
             )
         )
