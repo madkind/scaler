@@ -31,7 +31,7 @@ class Employee(models.Model):
 
     name = models.CharField(max_length=200)
     email = models.EmailField()
-    position = models.CharField(max_length=10, choices=Position.choices)
+    position = models.CharField(max_length=10, choices=Position.choices, default=Position.EMPLOYEE)
 
     @property
     def department(self):
@@ -43,5 +43,5 @@ class Employee(models.Model):
 
 
 class EmployeeDepartmentAssignment(models.Model):
-    employee = models.OneToOneField('Employee', unique=True, on_delete=models.CASCADE)
+    employee = models.OneToOneField('Employee', on_delete=models.CASCADE)
     department = models.ForeignKey('Department', on_delete=models.CASCADE)

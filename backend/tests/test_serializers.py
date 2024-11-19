@@ -4,6 +4,7 @@ from rest_framework import serializers
 from conftest import create_employee_to_department_assignment
 import pytest
 
+
 class TestDepartmentSerializer:
 
     def test_serialize_department(self, department_with_manager, manager_1):
@@ -17,52 +18,62 @@ class TestDepartmentSerializer:
             "name": "New Department",
             "description": "New Description",
             "manager": None,
-        }        
+        }
         serializer = DepartmentSerializer(data=data)
         assert serializer.is_valid(raise_exception=True)
-        
+
         department = serializer.save()
 
         assert department.name == "New Department"
         assert department.description == "New Description"
         assert department.manager is None
 
-    def test_update_department_with_manager(self, department_without_manager, manager_2):
+    def test_update_department_with_manager(
+        self, department_without_manager, manager_2
+    ):
         create_employee_to_department_assignment(manager_2, department_without_manager)
         data = {
             "id": department_without_manager.id,
             "manager": manager_2.id,
-        }        
+        }
         serializer = DepartmentSerializer(data=data, partial=True)
         assert serializer.is_valid(raise_exception=True)
-        
+
         department = serializer.save()
 
         assert department.manager == manager_2
-        
-    def test_update_department_with_manager_fails_due_department_diff(self, department_without_manager, manager_1):
+
+    def test_update_department_with_manager_fails_due_department_diff(
+        self, department_without_manager, manager_1
+    ):
         assert manager_1.department is None
         data = {
             "id": department_without_manager.id,
             "manager": manager_1.id,
-        }        
-        serializer = DepartmentSerializer(instance=department_without_manager, data=data, partial=True)
-        
+        }
+        serializer = DepartmentSerializer(
+            instance=department_without_manager, data=data, partial=True
+        )
+
         with pytest.raises(serializers.ValidationError) as exc_info:
             serializer.is_valid(raise_exception=True)
         assert exc_info.value.detail == {
             "manager": ["Employee does not belong to this department."]
         }
-        
-    def test_update_department_when_new_manager_is_appointed_old_manager_is_demoted(self, department_with_manager, manager_1, employee_1):
+
+    def test_update_department_when_new_manager_is_appointed_old_manager_is_demoted(
+        self, department_with_manager, manager_1, employee_1
+    ):
         assert manager_1.department == department_with_manager
         assert manager_1.position == Employee.Position.MANAGER.value
 
         data = {
             "id": department_with_manager.id,
             "manager": employee_1.id,
-        }        
-        serializer = DepartmentSerializer(instance=department_with_manager, data=data, partial=True)
+        }
+        serializer = DepartmentSerializer(
+            instance=department_with_manager, data=data, partial=True
+        )
         assert serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -70,6 +81,7 @@ class TestDepartmentSerializer:
         employee_1.refresh_from_db()
         assert manager_1.position == Employee.Position.EMPLOYEE.value
         assert employee_1.position == Employee.Position.MANAGER.value
+
 
 class TestEmployeeSerializer:
 
@@ -79,6 +91,59 @@ class TestEmployeeSerializer:
         assert serializer.data["name"] == employee_1.name
         assert serializer.data["email"] == employee_1.email
         assert serializer.data["position"] == employee_1.position
-        assert serializer.data["department"] == employee_1.department
-        
-    # skipping rest of tests since no custom logic is implemented
+        assert serializer.data["department"] == employee_1.department.id
+
+    def test_create_employee(self, department_with_manager):
+        data = {
+            "name": "NAME",
+            "email": "electronic@mail.com",
+            "position": Employee.Position.EMPLOYEE.value,
+            "department": department_with_manager.id,
+        }
+
+        serializer = EmployeeSerializer(data=data)
+        assert serializer.is_valid(raise_exception=True)
+        employee = serializer.save()
+
+        assert employee.name == data["name"]
+        assert employee.email == data["email"]
+        assert employee.department.id == data["department"]
+
+    def test_update_employee_can_change_department(
+        self, employee_1, department_with_manager, department_without_manager
+    ):
+        assert employee_1.department == department_with_manager
+        data = {
+            "name": "NAME",
+            "email": "electronic@mail.com",
+            "position": Employee.Position.EMPLOYEE.value,
+            "department": department_without_manager.id,
+        }
+
+        serializer = EmployeeSerializer(data=data, instance=employee_1)
+        assert serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        employee_1.refresh_from_db()
+        assert employee_1.department == department_without_manager
+
+    def test_update_employee_with_manager_position_can_NOT_change_department(
+        self, manager_1, department_with_manager, department_without_manager
+    ):
+        assert manager_1.department == department_with_manager
+        data = {
+            "name": "NAME",
+            "email": "electronic@mail.com",
+            "position": Employee.Position.EMPLOYEE.value,
+            "department": department_without_manager.id,
+        }
+
+        serializer = EmployeeSerializer(data=data, instance=manager_1)
+
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            serializer.is_valid(raise_exception=True)
+        assert exc_info.value.detail ==  {
+                    "department": [
+                        "Managers can not change department. Please demote manager to employee position, then try again!"
+                    ]
+                }

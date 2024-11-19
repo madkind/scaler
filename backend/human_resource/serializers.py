@@ -1,10 +1,15 @@
 from logging import Manager
+from turtle import position
 from rest_framework import serializers
-from .models import Department, Employee
+from .models import Department, Employee, EmployeeDepartmentAssignment
 from django.db.models import Case, When, Value
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.all(), required=True, allow_null=False
+    )
+
     class Meta:
         model = Employee
         fields = (
@@ -14,6 +19,43 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "position",
             "department",
         )
+        read_only_fields = (
+            "id",
+            "position",
+        )  # let's not allow changing position as department serializer handles it, and it should be a calculater prop anyway IMO
+
+    def validate(self, data):
+        if (
+            self.instance
+            and self.instance.position == Employee.Position.MANAGER.value
+            and self.instance.department != data["department"]
+        ):
+            raise serializers.ValidationError(
+                {
+                    "department": [
+                        "Managers can not change department. Please demote manager to employee position, then try again!"
+                    ]
+                }
+            )
+        return data
+
+    def create(self, validated_data):
+        department = validated_data.pop("department", None)
+        employee = super().create(validated_data)
+
+        EmployeeDepartmentAssignment.objects.create(
+            employee=employee, department=department
+        )
+
+        return employee
+
+    def update(self, instance, validated_data):
+        department = validated_data.pop("department", None)
+        employee = super().update(instance, validated_data)
+        EmployeeDepartmentAssignment.objects.update_or_create(
+            employee=employee, defaults={"department": department}
+        )
+        return employee
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -21,7 +63,6 @@ class DepartmentSerializer(serializers.ModelSerializer):
         queryset=Employee.objects.select_related(
             "employeedepartmentassignment__department"
         ).all(),
-        pk_field=serializers.IntegerField(),
         allow_null=True,
     )
 
@@ -40,7 +81,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
         if (
             manager
             and department_id
-            and getattr(manager.department, "id", None)!= department_id
+            and getattr(manager.department, "id", None) != department_id
         ):
             raise serializers.ValidationError(
                 {"manager": ["Employee does not belong to this department."]}
