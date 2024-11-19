@@ -50,9 +50,9 @@ class TestDepartmentSerializer:
         
         with pytest.raises(serializers.ValidationError) as exc_info:
             serializer.is_valid(raise_exception=True)
-            assert exc_info.value.detail == {
-                "manager": ["Employee does not belong to this department."]
-            }
+        assert exc_info.value.detail == {
+            "manager": ["Employee does not belong to this department."]
+        }
         
     def test_update_department_when_new_manager_is_appointed_old_manager_is_demoted(self, department_with_manager, manager_1, employee_1):
         assert manager_1.department == department_with_manager

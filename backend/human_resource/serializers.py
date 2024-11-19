@@ -1,6 +1,6 @@
 from logging import Manager
 from rest_framework import serializers
-from .models import Department, Employee, EmployeeDepartmentAssignment
+from .models import Department, Employee
 from django.db.models import Case, When, Value
 
 
@@ -37,7 +37,11 @@ class DepartmentSerializer(serializers.ModelSerializer):
     def validate(self, data):
         department_id = self.instance.id if self.instance else None
         manager = data.get("manager")
-        if manager and department_id and manager.department.id != department_id:
+        if (
+            manager
+            and department_id
+            and getattr(manager.department, "id", None)!= department_id
+        ):
             raise serializers.ValidationError(
                 {"manager": ["Employee does not belong to this department."]}
             )
