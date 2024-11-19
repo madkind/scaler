@@ -1,6 +1,6 @@
 from rest_framework import viewsets
-from .models import Employee
-from .serializers import EmployeeSerializer
+from .models import Employee, Department
+from .serializers import EmployeeSerializer, DepartmentSerializer
 import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -26,3 +26,9 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     permission_classes = []
     filter_backends = (DjangoFilterBackend,)
     filterset_class = EmployeeFilter
+
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    queryset = Department.objects.all()
+    serializer_class = DepartmentSerializer
+    permission_classes = []

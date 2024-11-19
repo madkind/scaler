@@ -64,6 +64,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
             "employeedepartmentassignment__department"
         ).all(),
         allow_null=True,
+        required=False,
     )
 
     class Meta:
