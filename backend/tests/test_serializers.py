@@ -1,3 +1,4 @@
+from appointment.serializers import AppointmentSerializer
 from human_resource.serializers import DepartmentSerializer, EmployeeSerializer
 from human_resource.models import Employee
 from rest_framework import serializers
@@ -142,8 +143,77 @@ class TestEmployeeSerializer:
 
         with pytest.raises(serializers.ValidationError) as exc_info:
             serializer.is_valid(raise_exception=True)
-        assert exc_info.value.detail ==  {
-                    "department": [
-                        "Managers can not change department. Please demote manager to employee position, then try again!"
-                    ]
-                }
+        assert exc_info.value.detail == {
+            "department": [
+                "Managers can not change department. Please demote manager to employee position, then try again!"
+            ]
+        }
+
+
+class TestAppointmentSerializer:
+
+    def test_serialize_appointment(self, appointment, employee_1, employee_2):
+        serializer = AppointmentSerializer(instance=appointment)
+        assert serializer.data["title"] == "Team Meeting"
+        assert serializer.data["description"] == "Weekly team sync"
+        assert serializer.data["creator"] == employee_1.id
+        assert serializer.data["invitees"] == [employee_1.id, employee_2.id]
+
+    def test_appointment_create(self, employee_1, employee_2):
+        data = {
+            "start_datetime": "2024-11-19T10:00:00Z",
+            "end_datetime": "2024-11-19T11:00:00Z",
+            "title": "Team Meeting",
+            "description": "Weekly team sync",
+            "creator": employee_1.id,
+            "invitees": [employee_1.id, employee_2.id],
+        }
+
+        serializer = AppointmentSerializer(data=data)
+
+        assert serializer.is_valid(raise_exception=True)
+        appointment_obj = serializer.save()
+
+        assert appointment_obj.title == "Team Meeting"
+        assert appointment_obj.description == "Weekly team sync"
+        assert appointment_obj.creator == employee_1
+
+        invitees = appointment_obj.invitees.all()
+        assert invitees.count() == 2
+        assert set(invitee.id for invitee in invitees) == {employee_1.id, employee_2.id}
+
+    def test_appointment_serializer_end_before_start(self, employee_1):
+        invalid_data = {
+            "start_datetime": "2024-11-19T11:00:00Z",
+            "end_datetime": "2024-11-19T10:00:00Z",
+            "title": "Team Meeting",
+            "description": "Weekly team sync",
+            "creator": employee_1.id,
+            "invitees": [employee_1.id],
+        }
+
+        serializer = AppointmentSerializer(data=invalid_data)
+
+        with pytest.raises(serializers.ValidationError) as exc_info:
+            serializer.is_valid(raise_exception=True)
+        assert exc_info.value.detail == {
+            "start_datetime": ["Start datetime must be earlier than end datetime."]
+        }
+
+    def test_appointment_remove_invitee(self, appointment, employee_1):
+        data = {
+            "start_datetime": "2024-11-19T10:00:00Z",
+            "end_datetime": "2024-11-19T11:00:00Z",
+            "title": "Team Meeting",
+            "description": "Weekly team sync",
+            "creator": employee_1.id,
+            "invitees": [employee_1.id],
+        }
+        serializer = AppointmentSerializer(instance=appointment, data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        assert appointment.invitees.count() == 1
+        assert appointment.invitees.get() == employee_1
+        
+
